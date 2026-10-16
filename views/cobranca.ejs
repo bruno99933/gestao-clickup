@@ -1,0 +1,104 @@
+<%- include('partials/header') %>
+
+<div class="page-head">
+  <h1>Cobrança — <%= date %></h1>
+  <div class="page-actions">
+    <% if (!isToday) { %><a class="btn ghost" href="/cobranca">← hoje</a><% } %>
+    <% if (isToday) { %>
+      <button class="btn" onclick="runSnapshot(this)">Recriar snapshot</button>
+    <% } %>
+    <form class="inline" method="GET" action="/cobranca">
+      <input type="date" name="date" value="<%= date %>" onchange="this.form.submit()">
+    </form>
+  </div>
+</div>
+<div class="muted">Dias com snapshot: <%= dates.join(' · ') %></div>
+
+<% if (!pessoas.length) { %>
+  <p class="empty">Sem tasks no snapshot desse dia.</p>
+<% } %>
+
+<% pessoas.forEach(p => { %>
+<section class="grupo">
+  <div class="grupo-head">
+    <h2><%= p.nome %> <span class="muted"><%= p.tasks.length %> task(s)</span></h2>
+    <div class="grupo-actions">
+      <% if (p.discord) { %>
+        <button class="btn primary" onclick="sendDM(this, '<%= p.nome %>')">📨 Cobrar no Discord</button>
+        <span class="muted mono"><%= p.discord.discord_id %></span>
+      <% } else { %>
+        <form class="inline" method="POST" action="/discord/link">
+          <input type="hidden" name="person" value="<%= p.nome %>">
+          <input name="discord_id" placeholder="Discord user ID" required>
+          <button class="btn ghost">Vincular</button>
+        </form>
+      <% } %>
+    </div>
+  </div>
+
+  <% p.tasks.forEach(t => { %>
+  <div class="task-card">
+    <div class="task-line">
+      <a href="<%= t.url %>" target="_blank"><b><%= t.task_name %></b></a>
+      <span class="chip"><%= t.status %></span>
+      <% if (t.is_subtask) { %><span class="chip sub">subtask</span><% } %>
+      <span class="chip ghost-chip"><%= t.contractLabel %> › <%= t.list_name %></span>
+      <% t.tagList.forEach(tag => { %><span class="chip" style="background:<%= tag.bg || '#334' %>;color:<%= tag.fg || '#fff' %>"><%= tag.name %></span><% }) %>
+      <span class="muted">venc. <%= t.dueFmt %></span>
+    </div>
+    <form class="note-form" method="POST" action="/cobranca/note">
+      <input type="hidden" name="date" value="<%= date %>">
+      <input type="hidden" name="task_id" value="<%= t.task_id %>">
+      <textarea name="note" placeholder="Motivo do atraso / contexto…"><%= notes[t.task_id] || '' %></textarea>
+      <button class="btn ghost">Salvar</button>
+    </form>
+  </div>
+  <% }) %>
+
+  <% if (p.msgs && p.msgs.length) { %>
+    <details class="msgs"><summary>Histórico Discord (<%= p.msgs.length %>)</summary>
+      <% p.msgs.forEach(m => { %>
+        <div class="msg <%= m.direction %>">
+          <span class="muted"><%= new Date(m.sent_at).toLocaleString('pt-BR') %> — <%= m.direction === 'out' ? 'enviada' : 'recebida' %></span>
+          <pre><%= m.content %></pre>
+        </div>
+      <% }) %>
+    </details>
+  <% } %>
+</section>
+<% }) %>
+
+<% if (orphans.length) { %>
+<section class="grupo orfas">
+  <h2>🗂 Notas de tasks fora do snapshot</h2>
+  <p class="muted">Anotações deste dia cujas tasks saíram do snapshot (fechadas ou mudaram de status).</p>
+  <% orphans.forEach(o => { %>
+    <div class="task-card">
+      <div class="task-line">
+        <% if (o.url) { %><a href="<%= o.url %>" target="_blank"><b><%= o.name || o.task_id %></b></a><% } else { %><b><%= o.name || o.task_id %></b><% } %>
+      </div>
+      <pre class="msg"><%= o.note %></pre>
+    </div>
+  <% }) %>
+</section>
+<% } %>
+
+</main>
+<script>
+async function runSnapshot(btn){
+  btn.disabled = true;
+  const r = await fetch('/cobranca/snapshot', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+  const j = await r.json();
+  alert(j.count != null ? `Snapshot: ${j.count} tasks` : 'Erro: ' + (j.error||''));
+  location.reload();
+}
+async function sendDM(btn, person){
+  btn.disabled = true;
+  const r = await fetch('/discord/send', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({person, date: '<%= date %>'})});
+  const j = await r.json();
+  alert(j.ok ? 'Mensagem enviada!' : 'Erro: ' + (j.error||''));
+  btn.disabled = false; location.reload();
+}
+</script>
+</body></html>

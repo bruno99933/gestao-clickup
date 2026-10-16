@@ -1,0 +1,32 @@
+<%- include('partials/header') %>
+
+<h1>Carga da semana <span class="muted"><%= semanaIni %> → <%= semanaFim %> (por data de homologação)</span></h1>
+
+<table class="tbl">
+  <thead><tr>
+    <th>Pessoa</th><th>Papel</th><th>Cards na semana</th><th>Pontos</th><th>Maior peso</th><th>Sem peso no título</th><th>Violações</th>
+  </tr></thead>
+  <tbody>
+  <% rows.forEach(p => { %>
+    <tr class="<%= p.viol.length ? 'row-warn' : '' %>">
+      <td><b><%= p.nome %></b></td>
+      <td class="muted"><%= p.cfg ? p.cfg.papel : 'fora do mapa' %></td>
+      <td><%= p.semana.length %><% if (p.cfg) { %> / <%= p.cfg.cards %><% } %></td>
+      <td><%= p.pontos %><% if (p.cfg) { %> / <%= p.cfg.pontos %><% } %></td>
+      <td><%= p.maxPeso || '—' %></td>
+      <td><%= p.semPeso || '—' %></td>
+      <td><% p.viol.forEach(v => { %><div class="viol">⚠ <%= v %></div><% }) %></td>
+    </tr>
+    <tr class="subrow"><td colspan="7">
+      <% p.semana.forEach(t => { %>
+        <a class="mini-task" href="<%= t.url %>" target="_blank"><%= t.clean_title %>
+          <span class="muted"><%= t.contractLabel %> · <%= t.status %> · venc <%= t.dueFmt %></span></a>
+      <% }) %>
+      <% if (p.semData.length) { %>
+        <div class="muted">Sem data: <%= p.semData.map(t => t.clean_title).join(' · ') %></div>
+      <% } %>
+    </td></tr>
+  <% }) %>
+  </tbody>
+</table>
+</main></body></html>

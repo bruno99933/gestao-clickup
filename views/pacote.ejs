@@ -1,0 +1,64 @@
+<%- include('partials/header') %>
+
+<% pacotes.forEach(p => { %>
+<section class="contrato-card pacote-sec">
+  <h2><%= p.label %> <span class="muted">homolog <%= C.WEEKDAYS[p.homolog] %> · produção <%= C.WEEKDAYS[p.prod] %></span></h2>
+
+  <% if (!p.pacote) { %>
+    <p class="muted">Nenhuma task <code>PACOTE ·</code> aberta nesta lista. Cria <code>PACOTE · <%= p.label %> · homolog DD/MM</code> com status homologação.</p>
+  <% } else { %>
+    <div class="pacote-head" id="p<%= p.pacote.id %>">
+      <h3>📦 <a href="<%= p.pacote.url %>" target="_blank"><%= p.pacote.name %></a></h3>
+      <span class="muted">homolog <%= p.pacote.dueFmt %> · status: <b><%= p.pacote.status %></b></span>
+    </div>
+
+    <table class="tbl">
+      <thead><tr><th>Card</th><th>Status</th><th>Responsável</th><th>Peso</th><th>Pronto?</th></tr></thead>
+      <tbody>
+      <% p.cards.forEach(t => { %>
+        <tr class="<%= t.pronto ? '' : 'row-warn' %>">
+          <td><a href="<%= t.url %>" target="_blank"><%= t.clean_title %></a>
+            <% if (t.ordem != null) { %><span class="chip ordem">#<%= t.ordem %></span><% } %>
+          </td>
+          <td><span class="chip" style="background:<%= (C.STATUS_META[t.status]||{}).cor || '#64748b' %>22;color:<%= (C.STATUS_META[t.status]||{}).cor || '#94a3b8' %>"><%= t.status %></span></td>
+          <td><%= t.assigneeList.join(', ') || '—' %></td>
+          <td><%= t.peso != null ? '[' + t.peso + ']' : '—' %></td>
+          <td>
+            <% t.checks.forEach(ch => { %>
+              <span class="check <%= ch.ok ? 'ok' : 'nok' %>" title="<%= ch.label %>"><%= ch.ok ? '✓' : '✗' %></span>
+            <% }) %>
+          </td>
+        </tr>
+      <% }) %>
+      <% if (!p.cards.length) { %><tr><td colspan="5" class="muted">Nenhum card com tag <b>no-pacote</b> até a data da homologação.</td></tr><% } %>
+      </tbody>
+    </table>
+
+    <form class="fechamento" method="POST" action="/pacote/fechamento">
+      <input type="hidden" name="pacote_id" value="<%= p.pacote.id %>">
+      <% const f = p.fechamento || {}; %>
+      <h3>Fechamento do ciclo <span class="muted">— colado no card do pacote no dia da homologação</span></h3>
+      <div class="fgrid">
+        <label>Pacote no dia? <select name="pacote_no_dia"><option value="">—</option><option <%= f.pacote_no_dia==='sim'?'selected':'' %>>sim</option><option <%= f.pacote_no_dia==='não'?'selected':'' %>>não</option></select></label>
+        <label>Cards no pacote <input name="cards_no_pacote" value="<%= f.cards_no_pacote != null ? f.cards_no_pacote : p.cards.length %>"></label>
+        <label>Soma de pontos <input name="soma_pontos" value="<%= f.soma_pontos != null ? f.soma_pontos : p.soma_pontos %>"></label>
+        <label>Alguém acima do teto <input name="acima_teto" value="<%= f.acima_teto || '' %>" placeholder="quem"></label>
+        <label>Card sem teste <input name="card_sem_teste" value="<%= f.card_sem_teste || '' %>" placeholder="quais"></label>
+        <label>Publicou sem de acordo? <select name="sem_acordo"><option value="">—</option><option <%= f.sem_acordo==='sim'?'selected':'' %>>sim</option><option <%= f.sem_acordo==='não'?'selected':'' %>>não</option></select></label>
+        <label>Pedido solto no pacote <input name="pedido_solto" value="<%= f.pedido_solto || '' %>"></label>
+      </div>
+      <h4 class="muted">Efeito (completa no dia seguinte à produção)</h4>
+      <div class="fgrid">
+        <label>Regressão de bug já corrigido <input name="regressao" value="<%= f.regressao || '' %>"></label>
+        <label>Outro setor quebrou? <select name="outro_setor"><option value="">—</option><option <%= f.outro_setor==='sim'?'selected':'' %>>sim</option><option <%= f.outro_setor==='não'?'selected':'' %>>não</option></select></label>
+        <label>Cliente achou a quebra antes? <select name="cliente_achou"><option value="">—</option><option <%= f.cliente_achou==='sim'?'selected':'' %>>sim</option><option <%= f.cliente_achou==='não'?'selected':'' %>>não</option></select></label>
+        <label>Bug bloqueante seguro na validação <input name="bloqueante_seguro" value="<%= f.bloqueante_seguro || '' %>"></label>
+        <label>Hotfix fora do dia <input name="hotfix_fora" value="<%= f.hotfix_fora || '' %>"></label>
+      </div>
+      <button class="btn primary">Salvar fechamento</button>
+      <% if (f.updated_at || p.fechamento) { %><span class="muted">salvo</span><% } %>
+    </form>
+  <% } %>
+</section>
+<% }) %>
+</main></body></html>

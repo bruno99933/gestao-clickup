@@ -1,0 +1,12 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file: .env
+    volumes:
+      - gestao_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  gestao_data:

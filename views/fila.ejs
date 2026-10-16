@@ -1,0 +1,33 @@
+<%- include('partials/header') %>
+
+<% for (const [key, cols] of Object.entries(data)) { %>
+<section class="fila-contrato">
+  <h2><%= C.contractLabel(key) %> <span class="muted"><%= Object.values(cols).flat().length %> cards</span></h2>
+  <div class="kanban">
+    <% for (const [status, cards] of Object.entries(cols)) {
+         if (!cards.length && status === 'outros') continue;
+         const meta = C.STATUS_META[status] || { cor: '#64748b' };
+    %>
+    <div class="kanban-col">
+      <h3 style="--cor:<%= meta.cor %>"><%= status %> <span class="muted"><%= cards.length %></span></h3>
+      <% cards.forEach(t => { %>
+        <div class="kcard <%= t.is_subtask ? 'subtask' : '' %>">
+          <a href="<%= t.url %>" target="_blank"><%= t.clean_title %></a>
+          <div class="kmeta">
+            <% if (t.peso) { %><span class="chip peso">[<%= t.peso %>]</span><% } %>
+            <% if (t.ordem != null) { %><span class="chip ordem">#<%= t.ordem %></span><% } %>
+            <% if (t.is_subtask) { %><span class="chip sub">subtask</span><% } %>
+            <% t.tagList.forEach(tag => { %><span class="chip" style="background:<%= tag.bg || '#334' %>;color:<%= tag.fg || '#fff' %>"><%= tag.name %></span><% }) %>
+          </div>
+          <div class="kmeta muted">
+            <% if (t.assigneeList.length) { %><%= t.assigneeList.join(', ') %> · <% } %>venc. <%= t.dueFmt || '—' %>
+            <% if (t.revisor) { %> · rev. <%= t.revisor %><% } %>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+    <% } %>
+  </div>
+</section>
+<% } %>
+</main></body></html>

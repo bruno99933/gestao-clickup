@@ -1,0 +1,77 @@
+<%- include('partials/header') %>
+
+<% const rot = routine; %>
+<section class="banner-dia">
+  <div class="banner-dia-main">
+    <span class="dia-nome"><%= C.WEEKDAYS[dow] %></span>
+    <div class="rotinas">
+      <% rot.homolog.forEach(h => { %><span class="rotina-pill homolog">🧪 Homologação <b><%= h %></b></span><% }) %>
+      <% rot.prod.forEach(p => { %><span class="rotina-pill prod">🚀 Produção <b><%= p %></b></span><% }) %>
+      <% rot.valida.forEach(v => { %><span class="rotina-pill valida">✋ Cliente valida <b><%= v %></b></span><% }) %>
+      <% rot.retro.forEach(r => { %><span class="rotina-pill retro">📝 Teste pós-prod + release notes <b><%= r %></b></span><% }) %>
+      <% if (!rot.homolog.length && !rot.prod.length && !rot.valida.length && !rot.retro.length) { %><span class="muted">Sem janela hoje</span><% } %>
+    </div>
+  </div>
+</section>
+
+<% if (alertas.length) { %>
+<section class="alertas">
+  <% alertas.forEach(a => { %>
+    <details class="alerta" style="--cor:<%= a.cor %>">
+      <summary><b><%= a.titulo %></b> — <span class="muted"><%= a.desc %></span></summary>
+      <ul>
+        <% a.tasks.forEach(t => { %>
+          <li><a href="<%= t.url %>" target="_blank"><%= t.clean_title %></a>
+            <span class="chip"><%= t.status %></span>
+            <span class="muted"><%= t.contractLabel %> · venc. <%= t.dueFmt || '—' %></span></li>
+        <% }) %>
+      </ul>
+    </details>
+  <% }) %>
+</section>
+<% } %>
+
+<section class="cards-grid">
+  <% for (const [key, c] of Object.entries(C.CONTRACTS)) {
+       const list = byContract[key] || [];
+       const counts = {};
+       list.forEach(t => counts[t.status] = (counts[t.status] || 0) + 1);
+       const pacote = pacotes.find(p => p.key === key);
+  %>
+  <div class="contrato-card">
+    <h2><%= c.label %></h2>
+    <div class="contrato-meta muted">
+      homolog <b><%= C.WEEKDAYS[c.homolog].slice(0,3) %></b> · prod <b><%= C.WEEKDAYS[c.prod].slice(0,3) %></b> · <%= list.length %> cards abertos
+    </div>
+    <div class="pipe">
+      <% C.PIPELINE.filter(s => s !== 'executado').forEach(s => { %>
+        <div class="pipe-st" style="--cor:<%= C.STATUS_META[s].cor %>" title="<%= s %>">
+          <b><%= counts[s] || 0 %></b><span><%= s %></span>
+        </div>
+      <% }) %>
+      <% const outros = list.filter(t => !C.PIPELINE.includes(t.status)).length;
+         if (outros) { %><div class="pipe-st" style="--cor:#64748b" title="status legado"><b><%= outros %></b><span>outros</span></div><% } %>
+    </div>
+    <% if (pacote && pacote.pacote) { %>
+      <div class="pacote-mini">
+        📦 <a href="<%= pacote.pacote.url %>" target="_blank"><%= pacote.pacote.name %></a>
+        · <%= pacote.cards.length %> cards no-pacote
+        <% if (pacote.pacote.dueFmt) { %>· homolog <%= pacote.pacote.dueFmt %><% } %>
+      </div>
+    <% } else { %>
+      <div class="pacote-mini muted">Sem task de pacote aberta</div>
+    <% } %>
+  </div>
+  <% } %>
+</section>
+
+<footer class="muted foot">Snapshots de cobrança: <%= snapshotDates.length %> dias · <a href="/cobranca">ver cobrança</a></footer>
+</main>
+<script>
+async function syncNow(btn){
+  btn.disabled = true; btn.textContent = '…';
+  await fetch('/sync', {method:'POST'});
+  setTimeout(() => location.reload(), 4000);
+}
+</script>
+</body></html>

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title><%= typeof title !== 'undefined' ? title + ' · ' : '' %>Gestão ClickUp</title>
+<link rel="stylesheet" href="/public/styles.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/">Gestão</a>
+  <nav>
+    <a href="/" class="<%= page === 'dashboard' ? 'on' : '' %>">Dashboard</a>
+    <a href="/fila" class="<%= page === 'fila' ? 'on' : '' %>">Fila</a>
+    <a href="/pacote" class="<%= page === 'pacote' ? 'on' : '' %>">Pacotes</a>
+    <a href="/time" class="<%= page === 'time' ? 'on' : '' %>">Time</a>
+    <a href="/cobranca" class="<%= page === 'cobranca' ? 'on' : '' %>">Cobrança</a>
+    <a href="/deploy" class="<%= page === 'deploy' ? 'on' : '' %>">Janelas</a>
+    <a href="/produtividade" class="<%= page === 'produtividade' ? 'on' : '' %>">Produtividade</a>
+  </nav>
+  <div class="topbar-right">
+    <button class="btn ghost" onclick="syncNow(this)">↻ Sincronizar</button>
+    <a class="btn ghost" href="/logout">Sair</a>
+  </div>
+</header>
+<main>

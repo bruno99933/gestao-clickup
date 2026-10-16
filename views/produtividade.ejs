@@ -1,0 +1,45 @@
+<%- include('partials/header') %>
+
+<h1>Produtividade</h1>
+<% if (firstEvent) { %>
+  <p class="muted">Medição própria desde <b><%= new Date(firstEvent).toLocaleString('pt-BR') %></b> — o plano Free do ClickUp não expõe histórico de status, então só contamos transições a partir daí.</p>
+<% } else { %>
+  <p class="muted">Nenhum evento registrado ainda — os dados começam a aparecer conforme o sync roda (a cada 15 min).</p>
+<% } %>
+
+<h2>Por pessoa — chegada em revisão vs data de homologação</h2>
+<table class="tbl">
+  <thead><tr><th>Pessoa</th><th>Cards</th><th>Com revisão medida</th><th>No prazo</th><th>Δ médio (dias)</th><th>Por peso</th></tr></thead>
+  <tbody>
+  <% perPerson.forEach(p => { %>
+    <tr>
+      <td><b><%= p.nome %></b></td>
+      <td><%= p.total %></td>
+      <td><%= p.medidos %></td>
+      <td><%= p.medidos ? `${p.noPrazo}/${p.medidos}` : '—' %></td>
+      <td class="<%= p.medidos && p.atrasoSum/p.medidos > 0 ? 'neg' : 'pos' %>"><%= p.medidos ? (p.atrasoSum/p.medidos).toFixed(1) : '—' %></td>
+      <td><% Object.entries(p.porPeso).forEach(([k,v]) => { %><span class="chip ghost-chip"><%= k %>: <%= v.noPrazo %>/<%= v.n %></span><% }) %></td>
+    </tr>
+  <% }) %>
+  </tbody>
+</table>
+
+<h2>Por card — trilha de status</h2>
+<table class="tbl">
+  <thead><tr><th>Card</th><th>Responsável</th><th>Status</th><th>Venc.</th><th>a fazer</th><th>revisão</th><th>executado</th><th>Δ</th></tr></thead>
+  <tbody>
+  <% rows.forEach(r => { const d = (t) => t ? new Date(t).toLocaleDateString('pt-BR') : '—'; %>
+    <tr>
+      <td><a href="<%= r.task.url %>" target="_blank"><%= r.task.clean_title %></a> <span class="muted"><%= r.task.contractLabel %></span></td>
+      <td><%= r.assignee %></td>
+      <td><span class="chip"><%= r.task.status %></span></td>
+      <td><%= r.task.dueFmt %></td>
+      <td><%= d(r.a_fazer) %></td>
+      <td><%= d(r.revisao) %></td>
+      <td><%= d(r.executado) %></td>
+      <td class="<%= r.deltaDias == null ? '' : (r.deltaDias > 0 ? 'neg' : 'pos') %>"><%= r.deltaDias == null ? '—' : (r.deltaDias > 0 ? '+' + r.deltaDias : r.deltaDias) %></td>
+    </tr>
+  <% }) %>
+  </tbody>
+</table>
+</main></body></html>

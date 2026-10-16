@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login · Gestão ClickUp</title>
+<link rel="stylesheet" href="/public/styles.css">
+</head>
+<body class="login-body">
+<form class="login-card" method="POST" action="/login">
+  <h1>Gestão ClickUp</h1>
+  <p class="muted">Painel de liderança — Operação</p>
+  <% if (typeof erro !== 'undefined' && erro) { %><div class="alert-erro">E-mail ou senha inválidos</div><% } %>
+  <input type="email" name="email" placeholder="E-mail" required autofocus>
+  <input type="password" name="senha" placeholder="Senha" required>
+  <button class="btn primary" type="submit">Entrar</button>
+</form>
+</body>
+</html>

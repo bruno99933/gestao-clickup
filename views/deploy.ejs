@@ -1,0 +1,66 @@
+<%- include('partials/header') %>
+
+<section class="banner-dia">
+  <div class="banner-dia-main">
+    <span class="dia-nome"><%= C.WEEKDAYS[dow] %></span>
+    <div class="rotinas">
+      <% routine.homolog.forEach(h => { %><span class="rotina-pill homolog">🧪 Homologação <b><%= h %></b></span><% }) %>
+      <% routine.prod.forEach(p => { %><span class="rotina-pill prod">🚀 Produção <b><%= p %></b></span><% }) %>
+      <% routine.valida.forEach(v => { %><span class="rotina-pill valida">✋ Cliente valida <b><%= v %></b></span><% }) %>
+      <% if (!routine.homolog.length && !routine.prod.length) { %><span class="muted">Sem janela de publicação hoje</span><% } %>
+    </div>
+  </div>
+</section>
+
+<% if (!janelas.length) { %>
+  <p class="empty">Hoje não é dia de homologação nem produção.
+    <% if (routine.valida.length) { %>É dia de validação do cliente: <b><%= routine.valida.join(', ') %></b>.<% } %></p>
+<% } %>
+
+<% janelas.forEach(j => { %>
+<section class="contrato-card">
+  <h2><%= j.tipo === 'homologação' ? '🧪' : '🚀' %> <%= j.tipo %> — <%= j.label %></h2>
+
+  <% if (j.pacote) { %>
+    <p>📦 <a href="<%= j.pacote.url %>" target="_blank"><b><%= j.pacote.name %></b></a> · status <b><%= j.pacote.status %></b></p>
+  <% } else { %>
+    <p class="muted">Sem task <code>PACOTE ·</code> aberta. <a href="/pacote">Ver pacotes</a></p>
+  <% } %>
+
+  <% if (!j.cards.length) { %><p class="muted">Nenhum card com tag <b>no-pacote</b>.</p><% } %>
+
+  <div class="deploy-list">
+  <% j.cards.forEach(t => { %>
+    <div class="deploy-item">
+      <a href="<%= t.url %>" target="_blank"><%= t.clean_title %></a>
+      <span class="chip" style="background:<%= (C.STATUS_META[t.status]||{}).cor || '#64748b' %>22;color:<%= (C.STATUS_META[t.status]||{}).cor || '#94a3b8' %>"><%= t.status %></span>
+      <span class="muted"><%= t.assigneeList.join(', ') %></span>
+      <% if (j.tipo === 'homologação' && t.status === 'revisão') { %>
+        <button class="btn sm" onclick="move(this,'<%= t.id %>','<%= t.status %>','homologação')">→ homologação</button>
+      <% } %>
+      <% if (j.tipo === 'produção' && t.status === 'homologação') { %>
+        <button class="btn sm" onclick="move(this,'<%= t.id %>','<%= t.status %>','executado')">→ executado</button>
+      <% } %>
+    </div>
+  <% }) %>
+  </div>
+
+  <% if (j.tipo === 'homologação') { %>
+    <p class="muted">No dia de homologação só entra card com teste verde e PR aprovada. O que falta vai para <b>correção</b> ou perde a tag no-pacote.</p>
+  <% } else { %>
+    <p class="muted">Produção só publica o que tem o de acordo escrito ("de acordo com o pacote de DD/MM"). Sem sign-off, não sobe.</p>
+  <% } %>
+</section>
+<% }) %>
+
+</main>
+<script>
+async function move(btn, id, fromStatus, toStatus){
+  btn.disabled = true;
+  const r = await fetch('/deploy/move', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({task_id:id, status:toStatus, from_status:fromStatus})});
+  const j = await r.json();
+  if (j.ok) location.reload(); else { alert('Erro: ' + (j.error||'')); btn.disabled = false; }
+}
+</script>
+</body></html>

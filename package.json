@@ -1,0 +1,20 @@
+{
+  "name": "gestao-clickup",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Painel de gestão dos contratos ClickUp — fila, pacotes, cobrança, deploys e produtividade",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "sync": "node src/sync.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.4.1",
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.7",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "node-cron": "^3.0.3"
+  }
+}
