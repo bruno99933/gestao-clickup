@@ -94,15 +94,60 @@ app.get('/', (req, res) => {
     (byContract[t.contract] = byContract[t.contract] || []).push(t);
   }
 
-  const alertas = [];
+  // ---- "Meu dia": filas de ação do líder ----
   const soltos = tasks.filter(t => t.status === 'solto' || jstr(t.tags).some(x => x.name === 'solto'));
+  const pedidos = tasks.filter(t => t.status === 'pedido');
+  const emRevisao = tasks.filter(t => t.status === 'revisão');
+  const correcoes = tasks.filter(t => t.status === 'correção');
+  const suporte = tasks.filter(t => jstr(t.tags).some(x => x.name === 'suporte'));
+  const higiene = tasks.filter(t =>
+    ['a fazer', 'fazendo'].includes(t.status) && (!t.peso || !t.revisor));
+  const pacotesExecutados = db.prepare(`SELECT * FROM tasks WHERE is_pacote=1 AND status='executado' ORDER BY date_updated DESC LIMIT 10`).all()
+    .map(decorate)
+    .filter(p => !db.prepare(`SELECT 1 FROM cycle_close WHERE pacote_id=?`).get(p.id));
+  const meuDia = [];
+  if (routine.homolog.length) meuDia.push({
+    icone: '🧪', titulo: `Fechar pacote — ${routine.homolog.join(', ')}`,
+    desc: 'Só fica no checklist card com teste verde e PR aprovada; o resto perde a tag ou vai pra correção',
+    link: '/pacote', cor: '#fbbf24' });
+  if (routine.prod.length) meuDia.push({
+    icone: '🚀', titulo: `Publicar produção — ${routine.prod.join(', ')}`,
+    desc: 'Só sobe o que tem "de acordo com o pacote de DD/MM" registrado',
+    link: '/deploy', cor: '#34d399' });
+  if (pedidos.length) meuDia.push({
+    icone: '✍️', titulo: `Completar ${pedidos.length} card(s) do pedido`,
+    desc: 'Escrever bloco "Para o dev", ordem, peso, revisor, data de homologação e responsável',
+    tasks: pedidos, cor: '#38bdf8' });
+  if (soltos.length) meuDia.push({
+    icone: '🔀', titulo: `Triar ${soltos.length} card(s) solto(s)`,
+    desc: 'Chegaram fora da reunião — reescrever pro dev quando o Igor encaixar no pacote',
+    tasks: soltos, cor: '#f97316' });
+  if (emRevisao.length) meuDia.push({
+    icone: '👀', titulo: `Conferir ${emRevisao.length} entrega(s) em revisão`,
+    desc: 'Conferir se a entrega condiz com o pedido e se o revisor aprovou a PR — aí move pra homologação',
+    tasks: emRevisao, cor: '#a78bfa', acao: 'homologação' });
+  if (correcoes.length) meuDia.push({
+    icone: '🔧', titulo: `Acompanhar ${correcoes.length} correção(ões)`,
+    desc: 'Cards recusados pelo gestor ou com teste que voltou — redistribuir/acompanhar',
+    tasks: correcoes, cor: '#f87171' });
+  if (suporte.length) meuDia.push({
+    icone: '🆘', titulo: `Priorizar ${suporte.length} card(s) de suporte`,
+    desc: 'Fila da Ana e do Taiki — bug com passo a passo vira card',
+    tasks: suporte, cor: '#eab308' });
+  if (higiene.length) meuDia.push({
+    icone: '🧹', titulo: `${higiene.length} card(s) em andamento sem peso ou revisor`,
+    desc: 'Peso na tag/[título] e "Revisor:" na primeira linha da descrição',
+    tasks: higiene, cor: '#64748b' });
+  if (pacotesExecutados.length) meuDia.push({
+    icone: '🧾', titulo: `${pacotesExecutados.length} fechamento(s) de ciclo pendente(s)`,
+    desc: 'Bloco execução/efeito no card do pacote — o Igor lê',
+    tasks: pacotesExecutados, link: '/pacote', cor: '#94a3b8' });
+
+  const alertas = [];
   const hotfix = tasks.filter(t => jstr(t.tags).some(x => x.name === 'hotfix'));
   const atrasados = tasks.filter(t => isOverdue(t, Date.now()) && t.due_date < Date.now());
-  const pedidosParados = tasks.filter(t => t.status === 'pedido');
-  if (soltos.length) alertas.push({ cor: '#f97316', titulo: `${soltos.length} card(s) solto(s)`, desc: 'Chegaram fora da reunião — esperam o Igor escolher pacote', tasks: soltos });
   if (hotfix.length) alertas.push({ cor: '#ef4444', titulo: `${hotfix.length} hotfix ativo`, desc: 'Órgão parado — mesma hora', tasks: hotfix });
-  if (pedidosParados.length) alertas.push({ cor: '#94a3b8', titulo: `${pedidosParados.length} pedido(s) aguardando bloco do dev`, desc: 'Líder completa "Para o dev" na manhã seguinte', tasks: pedidosParados });
-  if (atrasados.length) alertas.push({ cor: '#eab308', titulo: `${atrasados.length} card(s) além da data de homologação`, desc: 'Vencimento passou e não foram executados', tasks: atrasados.slice(0, 10) });
+  if (atrasados.length) alertas.push({ cor: '#eab308', titulo: `${atrasados.length} card(s) além da data de homologação`, desc: 'Vencimento passou e não foram executados — entrar na cobrança', tasks: atrasados.slice(0, 10) });
 
   // próxima homologação de cada contrato e cards marcados no-pacote
   const pacotes = [];
@@ -114,7 +159,7 @@ app.get('/', (req, res) => {
     pacotes.push({ key, ...c, cards, pacote });
   }
 
-  res.render('dashboard', { page:'dashboard', title:'Dashboard', today, dow, routine, byContract, C, alertas, pacotes, snapshotDates: snapshot.snapshotDates() });
+  res.render('dashboard', { page:'dashboard', title:'Dashboard', today, dow, routine, byContract, C, alertas, pacotes, meuDia, snapshotDates: snapshot.snapshotDates() });
 });
 
 // ---------- fila ----------
