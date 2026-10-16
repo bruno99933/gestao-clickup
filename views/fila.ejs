@@ -17,7 +17,7 @@
             <% if (t.peso) { %><span class="chip peso">[<%= t.peso %>]</span><% } %>
             <% if (t.ordem != null) { %><span class="chip ordem">#<%= t.ordem %></span><% } %>
             <% if (t.is_subtask) { %><span class="chip sub">subtask</span><% } %>
-            <% t.tagList.forEach(tag => { %><span class="chip" style="background:<%= tag.bg || '#334' %>;color:<%= tag.fg || '#fff' %>"><%= tag.name %></span><% }) %>
+            <% t.tagList.forEach(tag => { %><span class="chip" style="<%= tag.style %>"><%= tag.name %></span><% }) %>
           </div>
           <div class="kmeta muted">
             <% if (t.assigneeList.length) { %><%= t.assigneeList.join(', ') %> · <% } %>venc. <%= t.dueFmt || '—' %>

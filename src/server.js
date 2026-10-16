@@ -38,11 +38,19 @@ function isOverdue(t, ref) {
   return t.due_date && t.due_date < ref && !['executado', 'closed', 'complete'].includes(t.status);
 }
 function jstr(v) { try { return JSON.parse(v || '[]'); } catch { return []; } }
+// cor de texto legível sobre o fundo da tag (ClickUp às vezes manda fg == bg)
+function tagStyle(tag) {
+  const hex = (tag.bg || '').replace('#', '');
+  if (hex.length < 6) return 'background:var(--panel2);color:var(--muted)';
+  const n = parseInt(hex.slice(0, 6), 16);
+  const lum = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+  return `background:${tag.bg};color:${lum > 0.55 ? '#1a2430' : '#e8eef5'}`;
+}
 function decorate(t) {
   return {
     ...t,
     assigneeList: jstr(t.assignees),
-    tagList: jstr(t.tags),
+    tagList: jstr(t.tags).map(tag => ({ ...tag, style: tagStyle(tag) })),
     dueFmt: fmtDate(t.due_date),
     contractLabel: C.contractLabel(t.contract),
   };
