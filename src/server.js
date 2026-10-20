@@ -46,13 +46,27 @@ function tagStyle(tag) {
   const lum = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
   return `background:${tag.bg};color:${lum > 0.55 ? '#1a2430' : '#e8eef5'}`;
 }
+const PRIO = { urgent: ['urgente', '#ef4444'], high: ['alta', '#f59e0b'], normal: ['normal', '#60a5fa'], low: ['baixa', '#64748b'] };
+const _parentCache = {};
+function parentName(id) {
+  if (!id) return null;
+  if (!(id in _parentCache)) {
+    const p = db.prepare(`SELECT name FROM tasks WHERE id=?`).get(id);
+    _parentCache[id] = p ? p.name : null;
+  }
+  return _parentCache[id];
+}
 function decorate(t) {
+  const [prioLabel, prioCor] = PRIO[t.priority] || [null, null];
   return {
     ...t,
     assigneeList: jstr(t.assignees),
     tagList: jstr(t.tags).map(tag => ({ ...tag, style: tagStyle(tag) })),
     dueFmt: fmtDate(t.due_date),
+    startFmt: fmtDate(t.start_date),
     contractLabel: C.contractLabel(t.contract),
+    prioLabel, prioCor,
+    parentName: parentName(t.parent),
   };
 }
 function byStatus(tasks) {
@@ -94,18 +108,24 @@ app.get('/', (req, res) => {
     (byContract[t.contract] = byContract[t.contract] || []).push(t);
   }
 
-  // ---- "Meu dia": filas de ação do líder ----
-  const soltos = tasks.filter(t => t.status === 'solto' || jstr(t.tags).some(x => x.name === 'solto'));
+  // ---- "Meu dia": filas de ação do líder (execucao-gestao-sc.md) ----
+  const hasTag = (t, ...names) => jstr(t.tags).some(x => names.includes((x.name || '').toLowerCase()));
+  const emergencias = tasks.filter(t => C.isEmergency(jstr(t.tags)));
+  const suporte = tasks.filter(t => hasTag(t, 'suporte') && !C.isEmergency(jstr(t.tags)));
+  const soltos = tasks.filter(t => t.status === 'solto' && !hasTag(t, 'suporte') && !C.isEmergency(jstr(t.tags)));
   const pedidos = tasks.filter(t => t.status === 'pedido');
   const emRevisao = tasks.filter(t => t.status === 'revisão');
   const correcoes = tasks.filter(t => t.status === 'correção');
-  const suporte = tasks.filter(t => jstr(t.tags).some(x => x.name === 'suporte'));
   const higiene = tasks.filter(t =>
-    ['a fazer', 'fazendo'].includes(t.status) && (!t.peso || !t.revisor));
+    ['a fazer', 'fazendo'].includes(t.status) && (!t.peso || !t.revisor || !t.priority));
   const pacotesExecutados = db.prepare(`SELECT * FROM tasks WHERE is_pacote=1 AND status='executado' ORDER BY date_updated DESC LIMIT 10`).all()
     .map(decorate)
     .filter(p => !db.prepare(`SELECT 1 FROM cycle_close WHERE pacote_id=?`).get(p.id));
   const meuDia = [];
+  if (emergencias.length) meuDia.push({
+    icone: '🚨', titulo: `${emergencias.length} emergência(s) — órgão parado`,
+    desc: 'Tirar o solto, escrever bloco do dev, criar subtarefa com responsável da frente, teste no mesmo dia',
+    tasks: emergencias, cor: '#ef4444' });
   if (routine.homolog.length) meuDia.push({
     icone: '🧪', titulo: `Fechar pacote — ${routine.homolog.join(', ')}`,
     desc: 'Só fica no checklist card com teste verde e PR aprovada; o resto perde a tag ou vai pra correção',
@@ -116,12 +136,12 @@ app.get('/', (req, res) => {
     link: '/deploy', cor: '#34d399' });
   if (pedidos.length) meuDia.push({
     icone: '✍️', titulo: `Completar ${pedidos.length} card(s) do pedido`,
-    desc: 'Escrever bloco "Para o dev", ordem, peso, revisor, data de homologação e responsável',
+    desc: 'Bloco "Para o dev" + prioridade + tag de peso + revisor + subtarefa datada (≤ homologação)',
     tasks: pedidos, cor: '#38bdf8' });
-  if (soltos.length) meuDia.push({
-    icone: '🔀', titulo: `Triar ${soltos.length} card(s) solto(s)`,
-    desc: 'Chegaram fora da reunião — reescrever pro dev quando o Igor encaixar no pacote',
-    tasks: soltos, cor: '#f97316' });
+  if (suporte.length) meuDia.push({
+    icone: '🆘', titulo: `Priorizar ${suporte.length} card(s) de suporte`,
+    desc: 'Dúvida/acesso resolve sem código → executado. Bug com passo a passo → tira solto, marca peso e data',
+    tasks: suporte, cor: '#eab308' });
   if (emRevisao.length) meuDia.push({
     icone: '👀', titulo: `Conferir ${emRevisao.length} entrega(s) em revisão`,
     desc: 'Conferir se a entrega condiz com o pedido e se o revisor aprovou a PR — aí move pra homologação',
@@ -130,13 +150,13 @@ app.get('/', (req, res) => {
     icone: '🔧', titulo: `Acompanhar ${correcoes.length} correção(ões)`,
     desc: 'Cards recusados pelo gestor ou com teste que voltou — redistribuir/acompanhar',
     tasks: correcoes, cor: '#f87171' });
-  if (suporte.length) meuDia.push({
-    icone: '🆘', titulo: `Priorizar ${suporte.length} card(s) de suporte`,
-    desc: 'Fila da Ana e do Taiki — bug com passo a passo vira card',
-    tasks: suporte, cor: '#eab308' });
+  if (soltos.length) meuDia.push({
+    icone: '🔀', titulo: `${soltos.length} solto(s) de escopo aguardando o Igor`,
+    desc: 'Ele marca a tag do contrato e tira o solto — só depois você escreve o bloco do dev',
+    tasks: soltos, cor: '#f97316' });
   if (higiene.length) meuDia.push({
-    icone: '🧹', titulo: `${higiene.length} card(s) em andamento sem peso ou revisor`,
-    desc: 'Peso na tag/[título] e "Revisor:" na primeira linha da descrição',
+    icone: '🧹', titulo: `${higiene.length} card(s) em andamento sem peso, revisor ou prioridade`,
+    desc: 'Tag de peso (1 muito fácil…8 impossível), "Revisor:" na 1ª linha e prioridade marcada',
     tasks: higiene, cor: '#64748b' });
   if (pacotesExecutados.length) meuDia.push({
     icone: '🧾', titulo: `${pacotesExecutados.length} fechamento(s) de ciclo pendente(s)`,
@@ -144,9 +164,7 @@ app.get('/', (req, res) => {
     tasks: pacotesExecutados, link: '/pacote', cor: '#94a3b8' });
 
   const alertas = [];
-  const hotfix = tasks.filter(t => jstr(t.tags).some(x => x.name === 'hotfix'));
   const atrasados = tasks.filter(t => isOverdue(t, Date.now()) && t.due_date < Date.now());
-  if (hotfix.length) alertas.push({ cor: '#ef4444', titulo: `${hotfix.length} hotfix ativo`, desc: 'Órgão parado — mesma hora', tasks: hotfix });
   if (atrasados.length) alertas.push({ cor: '#eab308', titulo: `${atrasados.length} card(s) além da data de homologação`, desc: 'Vencimento passou e não foram executados — entrar na cobrança', tasks: atrasados.slice(0, 10) });
 
   // próxima homologação de cada contrato e cards marcados no-pacote
@@ -180,9 +198,10 @@ app.get('/fila', (req, res) => {
 // ---------- pacote ----------
 function pacoteInfo(contractKey) {
   const tasks = openTasks().map(decorate).filter(t => t.contract === contractKey);
+  // pacote: início = homologação, vencimento = produção. Prefere o que ainda não venceu.
   const pacotes = tasks.filter(t => t.is_pacote).sort((a, b) => (a.due_date || 9e18) - (b.due_date || 9e18));
   const todayEnd = endOfDayMs(todayStr());
-  const pacote = pacotes.find(p => !p.due_date || p.due_date >= todayEnd - 3 * 864e5) || pacotes[pacotes.length - 1] || null;
+  const pacote = pacotes.find(p => !p.due_date || p.due_date >= todayEnd - 864e5) || pacotes[pacotes.length - 1] || null;
   const cards = tasks.filter(t => !t.is_pacote && jstr(t.tags).some(x => C.isPacoteTag(x.name)));
   return { pacote, cards };
 }

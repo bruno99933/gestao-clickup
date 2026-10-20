@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { db, upsertTask } = require('./db');
 const clickup = require('./clickup');
-const { contractOf, parseTitle, pesoDe, parseRevisor, isPacote } = require('./config');
+const { contractOf, contractOfTags, parseTitle, pesoDe, parseRevisor, isPacote } = require('./config');
 
 const LIST_IDS = (process.env.CLICKUP_LIST_IDS || '').split(',').map(s => s.trim()).filter(Boolean);
 
@@ -21,16 +21,18 @@ function normalize(t, meta) {
   const { ordem, peso: titlePeso, clean } = parseTitle(t.name);
   const tagObjs = (t.tags || []).map(tag => ({ name: tag.name, fg: tag.tag_fg, bg: tag.tag_bg }));
   const peso = pesoDe(tagObjs, titlePeso);
+  const contract = contractOfTags(tagObjs) || contractOf(meta.space);
   return {
     id: t.id,
     list_id: t.list && t.list.id,
-    contract: contractOf(meta.space),
+    contract,
     list_name: meta.name,
     name: t.name,
     ordem, peso, clean_title: clean,
     status: (t.status && t.status.status || '').toLowerCase(),
     is_pacote: isPacote(t.name) ? 1 : 0,
     is_subtask: t.parent ? 1 : 0,
+    parent: t.parent || null,
     assignees: JSON.stringify((t.assignees || []).map(a => a.username)),
     tags: JSON.stringify(tagObjs),
     due_date: t.due_date ? +t.due_date : null,
@@ -38,6 +40,7 @@ function normalize(t, meta) {
     revisor: parseRevisor(t.description),
     description_excerpt: (t.description || '').slice(0, 3000),
     priority: t.priority ? (t.priority.priority || t.priority) : null,
+    start_date: t.start_date ? +t.start_date : null,
     date_updated: t.date_updated ? +t.date_updated : null,
     synced_at: new Date().toISOString(),
   };

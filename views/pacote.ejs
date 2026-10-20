@@ -9,7 +9,7 @@
   <% } else { %>
     <div class="pacote-head" id="p<%= p.pacote.id %>">
       <h3>📦 <a href="<%= p.pacote.url %>" target="_blank"><%= p.pacote.name %></a></h3>
-      <span class="muted">homolog <%= p.pacote.dueFmt %> · status: <b><%= p.pacote.status %></b></span>
+      <span class="muted"><% if (p.pacote.startFmt) { %>homolog <b><%= p.pacote.startFmt %></b> → <% } %>produção <b><%= p.pacote.dueFmt || '—' %></b> · status: <b><%= p.pacote.status %></b></span>
     </div>
 
     <table class="tbl">
@@ -53,7 +53,7 @@
         <label>Outro setor quebrou? <select name="outro_setor"><option value="">—</option><option <%= f.outro_setor==='sim'?'selected':'' %>>sim</option><option <%= f.outro_setor==='não'?'selected':'' %>>não</option></select></label>
         <label>Cliente achou a quebra antes? <select name="cliente_achou"><option value="">—</option><option <%= f.cliente_achou==='sim'?'selected':'' %>>sim</option><option <%= f.cliente_achou==='não'?'selected':'' %>>não</option></select></label>
         <label>Bug bloqueante seguro na validação <input name="bloqueante_seguro" value="<%= f.bloqueante_seguro || '' %>"></label>
-        <label>Hotfix fora do dia <input name="hotfix_fora" value="<%= f.hotfix_fora || '' %>"></label>
+        <label>Emergência fora do dia <input name="emergencia_fora" value="<%= f.emergencia_fora || f.hotfix_fora || '' %>"></label>
       </div>
       <button class="btn primary">Salvar fechamento</button>
       <% if (f.updated_at || p.fechamento) { %><span class="muted">salvo</span><% } %>

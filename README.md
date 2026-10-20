@@ -14,12 +14,16 @@ Painel de gestão dos três contratos (Uberlândia, ALMG, Campina Grande) basead
 | `/deploy` | Janelas do dia + cards do pacote, com botão para mover `revisão → homologação` / `homologação → executado` |
 | `/produtividade` | Chegada em `revisão` vs data de homologação, por pessoa e por peso |
 
-## Convenções reconhecidas (geral.md + prática real)
+## Convenções reconhecidas (geral.md rev. 2026-10-08 + prática real)
 
-- **Peso**: tag `1 muito fácil` … `4 difícil`, ou `[n]` no título
-- **Pacote**: tag `pacote`/`no-pacote` nos cards; task `PACOTE · …` com status `homologação`
+- **Contrato**: tag `uberlândia` / `almg` / `campina` (estrutura nova: Space Operação, listas por frente) — senão cai no mapeamento por space (estrutura atual por contrato)
+- **Peso**: tag `1 muito fácil` … `5 muito difícil`, `8 impossível` (ou `[n]` no título)
+- **Ordem**: prioridade do ClickUp (urgente → alta → normal → baixa), não número no título
+- **Pacote**: tag `pacote` nos cards; task `PACOTE · {contrato} · homolog DD/MM` com início=homologação e vencimento=produção
+- **Subtarefa**: líder cria pro dev, com data de entrega ≤ homologação do pedido
 - **Revisor**: linha `Revisor: nome` na descrição
-- **Ordem**: prefixo `NN ·` no título
+- **Emergência**: tag `emergência` + prioridade urgente (órgão parado)
+- **Visões**: Fila (pedido), Soltos (solto sem suporte), Suporte (tag suporte+solto), Emergência (tag emergência aberta), Pacote, Meus cards
 
 ## Rodando local
 

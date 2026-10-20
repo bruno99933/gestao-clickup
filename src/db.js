@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS tasks (
   revisor TEXT,
   description_excerpt TEXT,
   priority TEXT,
+  start_date INTEGER,
+  parent TEXT,
   date_updated INTEGER,
   synced_at TEXT
 );
@@ -98,10 +100,15 @@ CREATE TABLE IF NOT EXISTS cycle_close (
 );
 `);
 
+// migrações leves para bancos já criados
+for (const col of ['start_date INTEGER', 'parent TEXT']) {
+  try { db.exec(`ALTER TABLE tasks ADD COLUMN ${col}`); } catch {}
+}
+
 const stmts = {
-  upsertTask: db.prepare(`INSERT INTO tasks (id,list_id,contract,list_name,name,ordem,peso,clean_title,status,is_pacote,is_subtask,assignees,tags,due_date,url,revisor,description_excerpt,priority,date_updated,synced_at)
-    VALUES (@id,@list_id,@contract,@list_name,@name,@ordem,@peso,@clean_title,@status,@is_pacote,@is_subtask,@assignees,@tags,@due_date,@url,@revisor,@description_excerpt,@priority,@date_updated,@synced_at)
-    ON CONFLICT(id) DO UPDATE SET list_id=@list_id,contract=@contract,list_name=@list_name,name=@name,ordem=@ordem,peso=@peso,clean_title=@clean_title,status=@status,is_pacote=@is_pacote,is_subtask=@is_subtask,assignees=@assignees,tags=@tags,due_date=@due_date,url=@url,revisor=@revisor,description_excerpt=@description_excerpt,priority=@priority,date_updated=@date_updated,synced_at=@synced_at`),
+  upsertTask: db.prepare(`INSERT INTO tasks (id,list_id,contract,list_name,name,ordem,peso,clean_title,status,is_pacote,is_subtask,assignees,tags,due_date,url,revisor,description_excerpt,priority,start_date,parent,date_updated,synced_at)
+    VALUES (@id,@list_id,@contract,@list_name,@name,@ordem,@peso,@clean_title,@status,@is_pacote,@is_subtask,@assignees,@tags,@due_date,@url,@revisor,@description_excerpt,@priority,@start_date,@parent,@date_updated,@synced_at)
+    ON CONFLICT(id) DO UPDATE SET list_id=@list_id,contract=@contract,list_name=@list_name,name=@name,ordem=@ordem,peso=@peso,clean_title=@clean_title,status=@status,is_pacote=@is_pacote,is_subtask=@is_subtask,assignees=@assignees,tags=@tags,due_date=@due_date,url=@url,revisor=@revisor,description_excerpt=@description_excerpt,priority=@priority,start_date=@start_date,parent=@parent,date_updated=@date_updated,synced_at=@synced_at`),
   getTask: db.prepare(`SELECT status FROM tasks WHERE id=?`),
   insertEvent: db.prepare(`INSERT INTO status_events (task_id,from_status,to_status,at) VALUES (?,?,?,?)`),
 };

@@ -84,7 +84,7 @@
       <div class="pacote-mini">
         📦 <a href="<%= pacote.pacote.url %>" target="_blank"><%= pacote.pacote.name %></a>
         · <%= pacote.cards.length %> cards no-pacote
-        <% if (pacote.pacote.dueFmt) { %>· homolog <%= pacote.pacote.dueFmt %><% } %>
+        <% if (pacote.pacote.startFmt || pacote.pacote.dueFmt) { %>· <%= pacote.pacote.startFmt || '?' %> → <%= pacote.pacote.dueFmt || '?' %><% } %>
       </div>
     <% } else { %>
       <div class="pacote-mini muted">Sem task de pacote aberta</div>

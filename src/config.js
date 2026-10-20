@@ -52,7 +52,24 @@ function weekdayRoutine(day) {
   return out;
 }
 
-// contract key por space name
+// contrato por tag (estrutura nova: Space "Operação", listas por frente)
+const CONTRACT_TAGS = {
+  'uberlândia': 'procon uberlandia', 'uberlandia': 'procon uberlandia', 'udi': 'procon uberlandia',
+  'almg': 'procon almg',
+  'campina': 'procon campina grande', 'campina grande': 'procon campina grande', 'cg': 'procon campina grande',
+};
+const EMERGENCY_TAGS = ['emergência', 'emergencia', 'hotfix'];
+
+function contractOfTags(tagObjs) {
+  for (const t of tagObjs) {
+    const k = (t.name || '').toLowerCase().trim();
+    if (CONTRACT_TAGS[k]) return CONTRACT_TAGS[k];
+  }
+  return null;
+}
+function isEmergency(tagObjs) { return tagObjs.some(t => EMERGENCY_TAGS.includes((t.name || '').toLowerCase())); }
+
+// contract key por space name (estrutura atual: uma lista por contrato)
 function contractOf(spaceName) {
   const key = (spaceName || '').toLowerCase().trim();
   return CONTRACTS[key] ? key : key; // devolve a chave mesmo se desconhecido, pra não perder a task
@@ -95,5 +112,6 @@ function parsePacoteProducao(description) {
 
 module.exports = {
   CONTRACTS, PIPELINE, OPEN_STATUSES, STATUS_META, TEAM, WEEKDAYS,
-  weekdayRoutine, contractOf, contractLabel, parseTitle, pesoDe, parseRevisor, isPacote, isPacoteTag, parsePacoteProducao,
+  weekdayRoutine, contractOf, contractOfTags, contractLabel, isEmergency, EMERGENCY_TAGS, CONTRACT_TAGS,
+  parseTitle, pesoDe, parseRevisor, isPacote, isPacoteTag, parsePacoteProducao,
 };

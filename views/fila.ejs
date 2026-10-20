@@ -15,8 +15,8 @@
           <a href="<%= t.url %>" target="_blank"><%= t.clean_title %></a>
           <div class="kmeta">
             <% if (t.peso) { %><span class="chip peso">[<%= t.peso %>]</span><% } %>
-            <% if (t.ordem != null) { %><span class="chip ordem">#<%= t.ordem %></span><% } %>
-            <% if (t.is_subtask) { %><span class="chip sub">subtask</span><% } %>
+            <% if (t.prioLabel) { %><span class="chip" style="border-color:<%= t.prioCor %>;color:<%= t.prioCor %>"><%= t.prioLabel %></span><% } %>
+            <% if (t.is_subtask) { %><span class="chip sub" title="<%= t.parentName || '' %>">subtask<%= t.parentName ? ' ↳' : '' %></span><% } %>
             <% t.tagList.forEach(tag => { %><span class="chip" style="<%= tag.style %>"><%= tag.name %></span><% }) %>
           </div>
           <div class="kmeta muted">

@@ -41,7 +41,8 @@
     <div class="task-line">
       <a href="<%= t.url %>" target="_blank"><b><%= t.task_name %></b></a>
       <span class="chip"><%= t.status %></span>
-      <% if (t.is_subtask) { %><span class="chip sub">subtask</span><% } %>
+      <% if (t.prioLabel) { %><span class="chip" style="border-color:<%= t.prioCor %>;color:<%= t.prioCor %>"><%= t.prioLabel %></span><% } %>
+      <% if (t.is_subtask) { %><span class="chip sub" title="<%= t.parentName || '' %>">subtask</span><% } %>
       <span class="chip ghost-chip"><%= t.contractLabel %> › <%= t.list_name %></span>
       <% t.tagList.forEach(tag => { %><span class="chip" style="<%= tag.style %>"><%= tag.name %></span><% }) %>
       <span class="muted">venc. <%= t.dueFmt %></span>
